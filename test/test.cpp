@@ -1,84 +1,99 @@
+
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
-// change if you choose to use a different header name
 #include "CampusCompass.h"
 
 using namespace std;
 
-// the syntax for defining a test is below. It is important for the name to be
-// unique, but you can group multiple tests with [tags]. A test can have
-// [multiple][tags] using that syntax.
-TEST_CASE("Example Test Name - Change me!", "[tag]") {
-  // instantiate any class members that you need to test here
-  int one = 1;
 
-  // anything that evaluates to false in a REQUIRE block will result in a
-  // failing test
-  REQUIRE(one == 0); // fix me!
+TEST_CASE("Test invalid commands") {
+    CampusCompass cc;
+    cc.ParseCSV("data/edges.csv", "data/classes.csv");
 
-  // all REQUIRE blocks must evaluate to true for the whole test to pass
-  REQUIRE(false); // also fix me!
+    vector<string> testResults;
+    vector<string> expectedResults = {"unsuccessful", "unsuccessful", "unsuccessful", "unsuccessful",
+                                      "unsuccessful","unsuccessful","unsuccessful","unsuccessful",
+                                      "unsuccessful","unsuccessful","unsuccessful","unsuccessful",
+                                      "unsuccessful","unsuccessful","unsuccessful"};
+    cc.executeValidCommand("insert \"Ethan\" 0000000 1 1 COP3530", testResults); // 7-digit ufid
+    cc.executeValidCommand("insert \"Ethan\" 000000000 1 1 COP3530", testResults); // 9-digit ufid
+    cc.executeValidCommand("insert \"Ethan\" 000$0000 1 1 COP3530", testResults); // invalid ufid
+    cc.executeValidCommand("insert \"Ethan\" 0000a000 1 1 COP3530", testResults); // invalid ufid
+    cc.executeValidCommand("insert \"Ethan$\" 00000000 1 1 COP3530", testResults); // invalid name
+    cc.executeValidCommand("insert \"Ethan2\" 00000000 1 1 COP3530", testResults); // invalid name
+    cc.executeValidCommand("insert \"Ethan_\" 00000000 1 1 COP3530", testResults); // invalid name
+    cc.executeValidCommand("insert \"Ethan_\"", testResults); // missing arguments
+    cc.executeValidCommand("insert \"Ethan_\"", testResults); // missing arguments
+    cc.executeValidCommand("insert", testResults); // missing arguments
+    cc.executeValidCommand("Insert \"Ethan\" 00000000 1 1 COP3530", testResults); // invalid command
+    cc.executeValidCommand("insertt \"Ethan\" 00000000 1 1 COP3530", testResults); // invalid command
+    cc.executeValidCommand("insert \"Ethan\" 00000000 1 2 COP3530", testResults); // invalid command
+    cc.executeValidCommand("insert \"Ethan\" 00000000 1 2 COP3530 COP3502 COP3503", testResults); // invalid command
+    cc.executeValidCommand("insert \"Ethan\" 00000000 1 3 COP3530 COP3502", testResults); // invalid command
+
+
+    REQUIRE(expectedResults == testResults);
 }
 
-TEST_CASE("Test 2", "[tag]") {
-  // you can also use "sections" to share setup code between tests, for example:
-  int one = 1;
+TEST_CASE("Edge Cases") {
+    CampusCompass cc;
+    cc.ParseCSV("data/edges.csv", "data/classes.csv");
 
-  SECTION("num is 2") {
-    int num = one + 1;
-    REQUIRE(num == 2);
-  };
-
-  SECTION("num is 3") {
-    int num = one + 2;
-    REQUIRE(num == 3);
-  };
-
-  // each section runs the setup code independently to ensure that they don't
-  // affect each other
+    vector<string> testResults;
+    vector<string> expectedResults = {"successful", "unsuccessful", "unsuccessful", "unsuccessful",
+                                      "unsuccessful","unsuccessful","unsuccessful","unsuccessful",
+                                      };
+    cc.executeValidCommand("insert \"Ethan\" 00000000 1 1 COP3530", testResults);
+    cc.executeValidCommand("insert \"EthanDupe\" 00000000 1 1 COP3530", testResults); // insert duplicate id
+    cc.executeValidCommand("remove 11111111", testResults); // remove id that doesn't exist
+    cc.executeValidCommand("dropClass 11111111 COP3530", testResults); // drop class for id that doesn't exist
+    cc.executeValidCommand("dropClass 00000000 COP3503", testResults); // drop class that student doesn't have
+    cc.executeValidCommand("replaceClass 11111111 COP3530 COP3503", testResults); // id doesn't exist
+    cc.executeValidCommand("replaceClass 00000000 COP3503 COP3502", testResults); // student doesn't have class code 1
+    cc.executeValidCommand("replaceClass 00000000 COP3530 COP3530", testResults); // student already has class code 2
+    REQUIRE(expectedResults == testResults);
 }
 
-// You must write 5 unique, meaningful tests for credit on the testing section
-// of this project!
+TEST_CASE("dropClass, replaceClass, remove, removeClass") {
+    CampusCompass cc;
+    cc.ParseCSV("data/edges.csv", "data/classes.csv");
 
-// See the following for an example of how to easily test your output.
-// Note that while this works, I recommend also creating plenty of unit tests for particular functions within your code.
-// This pattern should only be used for final, end-to-end testing.
+    vector<string> testResults;
+    vector<string> expectedResults = {"successful", "successful", "successful", "successful",
+                                      "successful","successful","2","2","successful", "1"
+    };
+    cc.executeValidCommand("insert \"Ethan\" 00000000 1 6 COP3530 MAC2311 CDA3101 COT3100 COP3502 COP3503", testResults);
+    cc.executeValidCommand("insert \"Ethan Again\" 11111111 10 6 MAC2312 MAC2311 MAC2313 COT3100 COP3502 COP3503", testResults);
+    cc.executeValidCommand("dropClass 00000000 COP3530", testResults);
+    cc.executeValidCommand("dropClass 00000000 COP3502", testResults);
+    cc.executeValidCommand("replaceClass 00000000 MAC2311 COP3530", testResults);
+    cc.executeValidCommand("replaceClass 00000000 COP3530 MAC2311", testResults);
+    cc.executeValidCommand("removeClass MAC2311", testResults);
+    cc.executeValidCommand("removeClass COT3100", testResults);
+    cc.executeValidCommand("remove 11111111", testResults);
+    cc.executeValidCommand("removeClass COP3503", testResults);
+    REQUIRE(expectedResults == testResults);
+}
 
-// This uses C++ "raw strings" and assumes your CampusCompass outputs a string with
-//   the same thing you print.
-TEST_CASE("Example CampusCompass Output Test", "[flag]") {
-  // the following is a "raw string" - you can write the exact input (without
-  //   any indentation!) and it should work as expected
-  // this is based on the input and output of the first public test case
-  string input = R"(6
-insert "Student A" 10000001 1 1 COP3502
-insert "Student B" 10000002 1 1 COP3502
-insert "Student C" 10000003 1 2 COP3502 MAC2311
-dropClass 10000001 COP3502
-remove 10000001
-removeClass COP3502
-)";
+TEST_CASE("printShortestEdges with toggling edges") {
+    CampusCompass cc;
+    cc.ParseCSV("data/edges.csv", "data/classes.csv");
 
-  string expectedOutput = R"(successful
-successful
-successful
-successful
-unsuccessful
-2
-)";
-
-  string actualOutput;
-
-  // somehow pass your input into your CampusCompass and parse it to call the
-  // correct functions, for example:
-  /*
-  CampusCompass c;
-  c.parseInput(input)
-  // this would be some function that sends the output from your class into a string for use in testing
-  actualOutput = c.getStringRepresentation()
-  */
-
-  REQUIRE(actualOutput == expectedOutput);
+    vector<string> testResults;
+    cc.executeValidCommand("insert \"Ethan\" 00000000 7 1 CEN4907", testResults);
+    cc.executeValidCommand("printShortestEdges 00000000", testResults);
+    vector<int> v1 = cc.printShortestEdges("00000000");
+    cc.executeValidCommand("toggleEdgesClosure 1 45 47", testResults); // still reachable, longer path
+    cc.executeValidCommand("printShortestEdges 00000000", testResults);
+    vector<int> v2 = cc.printShortestEdges("00000000");
+    cc.executeValidCommand("toggleEdgesClosure 1 45 46", testResults); // unreachable
+    cc.executeValidCommand("printShortestEdges 00000000", testResults);
+    vector<int> v3 = cc.printShortestEdges("00000000");
+    vector<int> v11 = {6};
+    vector<int> v22 = {8};
+    vector<int> v33 = {-1};
+    REQUIRE(v1 == v11);
+    REQUIRE(v2 == v22);
+    REQUIRE(v3 == v33);
 }
