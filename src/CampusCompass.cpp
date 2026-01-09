@@ -397,32 +397,6 @@ int CampusCompass::checkEdgeStatus(int location1, int location2, vector<string>&
     return 2;
 }
 
-bool CampusCompass::isConnected(int location1, int location2, vector<string>& testing) {
-    unordered_set<int> visited;
-    queue<int> q;
-    visited.insert(location1);
-    q.push(location1);
-    while (!q.empty()) { // standard bfs traversal
-        int i = q.front();
-        q.pop();
-        if (i == location2) {
-            cout << "successful" << endl;
-            testing.push_back("successful");
-            return true;
-        }
-        vector<pair<int, edgeData>> neighbors = adjList[i];
-        for (auto& p: neighbors) {
-            if (visited.count(p.first) == 0 && p.second.isOpen) {
-                visited.insert(p.first);
-                q.push(p.first);
-            }
-        }
-    }
-    cout << "unsuccessful" << endl;
-    testing.push_back("unsuccessful");
-    return false;
-}
-
 vector<int> CampusCompass::printShortestEdges(string id) { // Code design from module 8b, slide 38
     vector<int> returnRes; // for testing
     vector<string> classesToPrint = students.at(id).classes;
