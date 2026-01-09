@@ -55,6 +55,5 @@ public:
     int removeClass(string classCode, vector<string>& testing);
     bool toggleEdgesClosure(vector<int> edgesToClose, vector<string>& testing);
     int checkEdgeStatus(int location1, int location2, vector<string>& testing);
-    bool isConnected(int location1, int location2, vector<string>& testing);
     vector<int> printShortestEdges(string id);
 };
